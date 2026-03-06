@@ -3,7 +3,9 @@
 import streamlit as st
 import pandas as pd 
 import joblib
+from sqlalchemy import create_engine
 
+engine = create_engine('postgresql://postgres:8U8T5K8U@localhost:5432/German_Credit_Risk')
 model = joblib.load("best_extra_trees_model.pkl")
 encoders = {col: joblib.load(f"{col}_encoder.pkl") for col in ["Sex","Housing","Saving accounts","Checking account"]}
 
@@ -30,9 +32,33 @@ input_data = pd.DataFrame({
     "Duration": [duration]
 })
 
+
+def log_prediction_to_db(input_data, result):
+    try:
+        # Add the infomation to a DataFrame for logging
+        log_df = input_data.copy()
+        log_df['prediction_result'] = "Risky"if result == 1 else "Riskless"
+        # Send information to SQL 
+        log_df.to_sql('prediction_logs',engine,if_exists = 'append', index=False, schema='public')
+        return True
+    except Exception as e:
+        st.error(f"Error logging prediction to database: {e}")
+        return False
+    
+
 if st.button("Predict Risk"):
     prediction = model.predict(input_data)[0]
     if prediction == 1:
         st.success("Predicted Risk: **Good (Lower Risk)**")
+
     else:
         st.error("Predicted Risk: **Bad (Higher Risk)**")
+
+    with st.spinner("Logging prediction to database..."):
+        if log_prediction_to_db(input_data, prediction):
+            st.success("Prediction logged successfully!")
+        else:
+            st.error("Failed to log prediction.")
+
+
+

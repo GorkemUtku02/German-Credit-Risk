@@ -13,17 +13,15 @@ connection_string = f'postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DB_NAME}'
 engine = create_engine(connection_string)
 
 try:
-    # 3. CSV'yi Oku
+    # 3. Read CSV Data
     df = pd.read_csv("german_credit_data.csv")
     
-    # 4. Sütun isimlerini temizle (SQL boşluk sevmez)
+    # 4. Clean up column names 
     #df.columns = [c.lower().replace(' ', '_') for c in df.columns]
 
-    # 5. SQL'e Gönder
-    # 'credit_table' isminde bir tabloyu otomatik oluşturur
-    # 'schema' ekleyerek yerini garantiye alıyoruz
-    df.to_sql('credit_table', engine, if_exists='replace', index=False, schema='public')
+    # 5. Insert data into SQL
+    df.to_sql('prediction_logs', engine, if_exists='append', index=False, schema='public')
     
-    print("✅ CConnection successful and data inserted into SQL!")
+    print("✅ Connection successful and data inserted into SQL!")
 except Exception as e:
     print(f"❌ Error occurred: {e}")
